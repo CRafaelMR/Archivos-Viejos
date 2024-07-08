@@ -1,0 +1,220 @@
+---
+title: "Untitled"
+author: "Cristóbal Meneses"
+date: "18-10-2019"
+output: html_document
+---
+PPT (parte 1): páginas 127-129.
+```{r}
+setwd("E:/R_hans")
+library(dplyr)
+library(plyr)
+storms
+
+#Verifique nombres y estructura de la base storms. ¿cuántas observaciones tiene el data frame?, ¿cuántas variables tiene el data frame?.
+
+str(storms)
+colnames(storms)
+nrow(storms)
+ncol(storms)
+
+#Genere un resumen de las variables del data frame storms, ¿las variables contienen valores perdidos?, si es así, ¿qué variables contienen valores perdidos y cuántos?.
+perdidos<- colnames(storms[colSums(is.na(storms))>0])
+perdidos
+sum(is.na(storms$ts_diameter))
+sum(is.na(storms$hu_diameter))
+```
+
+
+
+
+```{r}
+#¿Cuántos nombres de tormentas distintos posee el data frame storms?. La variable de referencia es name.
+
+length(unique(storms$name))
+
+
+
+```
+```{r}
+#Construya la variable date. Para ello, concatene las variables year, month y day usando "-" como separador. Use la función paste().
+#Convierta la variable status a factor.
+
+storms <- storms%>%mutate( date= paste(year,month, day, sep="-"))%>%mutate(status = as.factor(status))
+
+#Calcule el coeficiente de variación de las variables wind y pressure. ¿Qué puede decir al respecto?.
+(sd(storms$wind)/mean(storms$wind))*100
+(sd(storms$pressure)/mean(storms$ pressure))*100
+#En el data frame storms, cree una variable ratio con el ratio entre pressure y wind. ¿Cuál es el valor mínimo de este ratio?, ¿cuál es el máximo?, ¿cuál es su coeficiente de variación?. Comente.
+RATIO <- storms%>% mutate(ratio = pressure/wind)%>%summarise(minimo =min(ratio), maximo= max(ratio), cv=(sd(ratio)/mean(ratio))*100)
+RATIO
+
+#Genere un data frame llamado storms2 que solo contenga las variables wind y pressure. 
+storms2 =storms[c("wind", "pressure")]
+#Genere un data frame llamado storms3 que solo contenga observaciones donde wind > 50 y el nombre de la tormenta sea Alberto, Alex o Allison. ¿Cuántas observaciones tiene este data frame?.
+storms3 <- storms[which(storms$name=='Alberto'|storms$name=='Alex'|storms$name=='Allison'& storms$wind > 50),]
+nrow(storms3)
+#Genere un data frame llamado storms4 que solo contenga la variable category, cuyas observaciones tengan un status de tropical depression o tropical storm y no tengan por nombre Amy. Use la función subset(). ¿Cuántas observaciones tiene este data frame?, ¿Qué categoría (category) posee la mayor frecuencia?.   
+storms4 <-subset(storms, (name!="Amy") & (status=="tropical depression"|status=="tropical storm"), select ="category" )
+nrow(storms4)
+storms4%>%group_by(category)%>%summarise(cantidad=n())
+```
+
+
+```{r}
+#Calcule el coeficiente de variación de las variables wind y pressure para los registros de tormentas anteriores al año (year) 2000 y que tengan el status de hurricane. Comente.
+storms%>%filter(year<2000 & status=="hurricane")%>%summarise( cv_wind=(sd(wind)/mean(wind))*100,cv_pressure=(sd(pressure)/mean(pressure))*100 )
+
+#storms$status[, wind>65 & wind<80] 
+storms$status[ storms$wind>65 & storms$wind<80] 
+
+```
+El codigo falla porque no reconoce el objeto Wind por si solo. Al señalar que es un subset de storms, lo reconoce y ejecuta.
+```{r}
+#Genere un data frame llamado storms5 que solo contenga observaciones de tormentas registradas entre las 0 y 12 horas (hour) del 1975-6-27 (date), cuya velocidad de viento (wind) supere la mediana de las velocidades registradas. 
+storms5<- storms%>%filter(date=="1975-6-27" & hour>=0 & hour<=12)%>%filter(wind>median(wind))
+
+
+```
+Storms5 tiene 0 observaciones pues el unico valor de wind que presentan las observaciones entre las 0 y 12 horas de 1975-6-27 es de 25, por lo que ninguna observacion supera la media.
+
+
+PPT (parte 2): página 15-16; 
+```{r}
+Pitagoras<-function(a,b){
+  c=sqrt(a*a+b*b)
+return(c)
+  }
+
+Pitagoras(3,4)
+
+media_pond<-function(X, wf){
+  res<-sum(x*wf)/length(x)
+  res
+}
+varianza_pond <-function(X, wf){
+  res<-var(x*wf)
+  res
+}
+x<-rnorm(10)
+wf<-runif(10)
+media_pond(x,wf)
+varianza_pond(x,wf)
+
+
+rescale11 <-function(x, from=-1, to=1){
+  rng <- range(x, na.rm = TRUE)
+ out= (((-rng[length(x)]*from)+rng[1]*to)/(-rng[1]+rng[length(x)]))+(-from+to)*x/(-rng[1]+rng[length(x)])
+out
+}
+library(scales)
+x<-colnames(iris)
+laply(iris,function(x) rescale( x, -1, 1))
+rescale11(iris$Sepal.Length)
+```
+página 60
+```{r}
+#Escriba un algoritmo usando la instrucción for que calcule el promedio móvil de orden 2 de un vector 𝐱. (Si 𝐱=(𝑥_1, 𝑥_2,…, 𝑥_𝑛  ) el promedio móvil de orden 2 es el vector de longitud 𝑛−1 cuya i-ésima componente es (〖𝑥_𝑖+𝑥_(𝑖+1)〗∕2)). Pruebe el algoritmo en el archivo de R Nile.
+prom_movil<- function(x){
+  sort(x)
+
+  for(i in 1:length(x))
+    
+  y[i] =(x[i]+x[i+1])/2
+  print(y)
+}
+nile<-Nile
+prom_movil(nile)
+
+#La siguiente función supuestamente calcula el n-ésimo término de la sucesión de Fibonacci, pero en realidad tiene varios errores de diverso tipo (de sintaxis, de programación, de concepto). Encuéntrelos y corríjalos.
+
+         fib3 <- function(n) {                                                          x <- 0
+         x1<- 0
+         x2<- 1
+          for(i in 1:n){
+            x[i] <- x1 + x2
+            x2 <- x1
+            x1 <- x[i]
+          }
+         print(x[n])
+         }
+            fib3(8)                                        
+
+```
+ página 92.
+```{r}
+#Cargue el conjunto de datos Titanic y revise su estructura. Utilizando la función apply(), indique ¿cuántos niveles o categorías posee cada variable en este conjunto de datos?.
+#lapply(Titanic,FUN=length)
+
+#Considere los siguientes vectores 
+
+         x<-c(1,23,5,9,0,NA)
+         y<-c(5,45,NA,78,NA,34)
+        
+#Construya un data frame llamado data.f1 que tenga como columnas a x e y.
+data.f1 <-data.frame(x, y)
+         #En data.f1 se desea reemplazar los valores NA por 0 y conservar el resto de los valores originales. Construya data.f2 que cumpla este objetivo, mediante alguna función de la familia apply(). 
+data.f1[is.na(data.f1$x)]<-0
+data.f1[is.na(data.f1$y)]<-0
+data.f2<-data.f1
+
+#data.f2<-lapply(data.f1, function(x) data.f1[is.na(data.f1$x)=="1"]<-0)
+    
+#Cargue el conjunto de datos diamonds (paquete ggplot2) y verifique su estructura. Utilizando alguna función de la familia apply(), responda
+
+#¿el color D tiene el precio promedio recortado al 10% más bajo?
+#¿el corte Fair tiene el peso mediano más alto?
+
+```
+
+
+
+PPT (parte 3): página 63-65; . Se adjuntan las bases.
+
+```{r }
+#A partir de la base Casen.2017 genere los siguientes datasets:
+library(haven)
+Casen.2017 <- read_dta("Casen_2017_homologada.dta")
+
+#Casen.2017.1: Personas que residan en las regiones 5,6,7 y 8 que no se encuentren en el tramo escolar 1. Conserve las variables folio, region, comuna, zona, sexo y edad
+casen.2017.1 <- Casen.2017%>%filter(region=="5"|region== "6"|region== "7"|region== "8" & nivel_homologado!=1)%>%select(folio, region, comuna, zona, sexo, edad)
+#Casen.2017.2: Personas cuyo ingreso autónomo per cápita del hogar (ing_aut_pc) se encuentre entre $200.000 y $300.000, ambos extremos inclusive. Conserve las variables folio, ing_aut_pc, tasa_ocupado y tasa_desocupados.
+
+
+casen.2017.2 <-Casen.2017%>%filter(ing_aut_pc>=200000 & ing_aut_pc<=300000)%>%select(ing_aut_pc,tasa_ocupado, tasa_desocupados)
+
+#Genere un data set Casen.2017.3 que contenga todas las personas que aparezcan tanto en Casen.2017.1 como en Casen.2017.2. ¿Cuántas observaciones tiene este nuevo data frame?.
+
+casen.2017.3<- intersect(intersect(Casen.2017,casen.2017.1),casen.2017.2)
+
+#En el data frame Casen.2017.3 renombre las variables ing_aut_pc, tasa_ocupado y tasa_desocupados con ingreso, prom_ocupa y prom_desocupa, respectivamente. 
+
+```
+
+página 80
+```{r}
+datosIPC<-read.csv("DatosIPC.csv", header=T, sep = ";"); str(datosIPC)
+
+datosIPC$producto<-paste0(datosIPC$DIVISION,datosIPC$GRUPO,datosIPC$CLASE,datosIPC$SUBCLASE,datosIPC$PRODUCTO)
+length(unique(datosIPC$producto))
+
+datosIPC<-datosIPC[,c(7:38)]
+nombres<-names(datosIPC)[1:31];nombres
+
+```
+
+importa la base csv IPC, crea la variable producto que es una concatenacion de division, Grupo, Clase, Subclase y producto. Luego calcula la cantidad de valores distintos para la variable recien creada. 
+se queda solamente con las observaciones de la 7 a la 38, para luego crear un vector con el nombre de esas mismas observaciones
+```{r}
+for (i in 1:31){
+  datosIPC[,i]=as.numeric(datosIPC[,i])
+}
+
+```
+se asegura de que todos los valores guardados en el ejercicio anterior sean numericos reemplazandolos con si mismos as.numeric.
+```{r}
+datosIPC_new<-gather(datosIPC, key="fuente", value="pm", nombres, convert = TRUE); str(datosIPC_new)
+
+```
+crea una nueva base de datos que contiene los 31 valores antes recolectados.
+

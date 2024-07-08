@@ -1,0 +1,75 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r global}
+#Establecer directorio
+setwd("C:/Users/jimer/OneDrive/Escritorio/R_hans")
+library(readxl)
+library(tidyverse)
+Marco <- read_excel("Marco.xlsx")
+str(Marco)
+
+Muestra<- read_excel("muestra.xlsx")
+str(Muestra)
+
+
+
+```
+En el Marco se encuestaron `r nrow(Marco)` observaciones mientras que en la Muestra `r nrow(Muestra)`, con `r ncol(Muestra)` variables en ambas.
+
+```{r}
+#generamos la matriz Missing que muestra todos los datos perdidos de cada variable en Muestra y Marco. Como las bases tienen las mismas variables, la matriz queda ordenada.
+Missings <- data.frame(NA_Muestra = colSums(is.na(Muestra)),
+                       NA_Marco = colSums(is.na(Marco)) 
+           )%>%mutate(NA_Muestra=NA_Muestra/nrow(Muestra),
+                      NA_Marco=NA_Marco/nrow(Marco))
+  
+Missings
+```
+
+Como se ve en la tabla, ninguna de las variables tiene valores perdidos. 
+
+4)
+```{r}
+sum(duplicated(Muestra$FOLIO))
+sum(duplicated(Marco$FOLIO))
+```
+La Muestra tiene `r sum(duplicated(Muestra$FOLIO))` folios repetidos, mientras que el Marco tiene `r sum(duplicated(Marco$FOLIO))`.
+
+5)
+```{r}
+Distintos <- data.frame( Muestra= c(count(distinct(Muestra,REGION)),count(distinct(Muestra, TRAMO)), count(distinct(Muestra, TAMANO))),
+                       Marco= c(count(distinct(Marco, REGION)),count(distinct(Marco, TRAMO)), count(distinct(Marco, TAMANO))))
+Distintos
+```
+La variable REGION puede tener 10 valores, TRAMO puede tener 2 y TAMANO puede tener 9. En total podrian existir $10*2*9 = 180$ valores distintos. A pesar de esto Marco tiene `r as.double(count(distinct(Marco, REGION,TRAMO, TAMANO)))` valores distintos, mientras que la Muestra tiene `r as.double(count(distinct(Muestra, REGION,TRAMO, TAMANO)))`. No pueden ocurrir las 180 valores distintos pues TRAMO esta en funcion de TAMANO, esto es, no existen empresas de gran tamaño con TRAMO==2.
+
+6)
+
+```{r}
+Muestra <-Muestra%>%mutate(ESTRATO=paste(REGION, TRAMO, TAMANO, sep="-"))
+Marco <-Marco%>%mutate(ESTRATO=paste(REGION, TRAMO, TAMANO, sep="-"))
+count(distinct(Marco, ESTRATO))
+count(distinct(Muestra, ESTRATO))
+
+```
+
+7)
+```{r}
+#Creamos la Muestra con factor de expansion creando una pequeña base resumen de Marco que contiene la cantidad de observaciones de cada estrato, la cual luego unimos con la base de Muestra
+
+Muestraex <-Marco%>%group_by(ESTRATO)%>% 
+  summarise(FACTOR_EXPANSION =n())%>%
+  right_join(Muestra,by="ESTRATO")%>%
+  group_by(ESTRATO)%>%
+  mutate(FACTOR_EXPANSION=FACTOR_EXPANSION/sum(ESTRATO==ESTRATO))%>%
+  mutate(FACTOR_EXPANSION=if_else(TRAMO==1,1,FACTOR_EXPANSION))#Algunas de las observaciones de Marco con Estrato==1 no aparecen en muestra, por lo que se debe forzar el factor de 1 para estas manualmente.
+Muestraex
+write.csv(Muestraex, file = "Muestra_Factores_Expansion.csv")
+
+```
+
+
+
