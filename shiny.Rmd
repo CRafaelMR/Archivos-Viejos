@@ -1,0 +1,204 @@
+---
+title: "Graphs on global terrorism"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    storyboard: true
+    vertical_layout: scroll
+  runtime: shiny
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = F)
+options(repos = c(CRAN = "http://cran.rstudio.com"))
+rm(list = ls()) # limpia el entorno
+
+options(scipen = 9999)
+
+#install.packages('ggridges')
+library(flexdashboard)
+library(shiny)
+library(plotly)
+library(ggridges)
+library(GGally)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(haven)
+library(readr)
+library(data.table)
+library(zoo)
+terr<- read.csv("C:/Users/jimer/OneDrive/Escritorio/R y Data Science/PS2/globalterrorismdb_0718dist.csv")
+polit<-read_dta("C:/Users/jimer/OneDrive/Escritorio/R y Data Science/PS2/DPI2012.dta")
+
+pols<-terr%>%rename(
+    countryname =country_txt ,
+    year = iyear)%>%mutate(year = as.numeric(year))%>%
+    left_join(polit, by=NULL  )
+
+  
+
+targs<- factor(levels(pols$targtype1_txt))
+anios<-c(levels(as.factor(pols$year)))
+paises<-c(levels(as.factor(pols$countryname)))
+
+binarizador<- function(x){
+  pols<-pols%>%mutate(  x =
+    ifelse( pols$weaptype2_txt=="x"|
+              pols$weaptype3_txt=="x"|
+              pols$weaptype4_txt=="x", 1,0))
+
+}
+weaptype<-c(levels((pols$weaptype1_txt)))
+varis<- c(c(levels(pols$weaptype1_txt), "military"))
+
+setDT(pols)[, c(levels(pols$weaptype1_txt), "weaptype1_txt") := 
+    c(lapply(levels(weaptype1_txt), function(x) as.integer(x ==weaptype1_txt)), .(NULL))]
+
+  
+lapply(weaptype, function(x) binarizador(x))
+
+
+
+```
+
+
+Reportes por país
+======================================================================
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+```{r imputs1, echo=FALSE}
+inputPanel(
+  selectInput("Country_txt", label = "Country",
+              choices = paises, selected = "Chile"),
+  selectInput("ANIO", label = "Year",
+              choices = c(1970:2017), selected = "1986"),
+  
+  checkboxGroupInput("targt", "Target Type", choices= targs, selected = "Police")
+  #,
+
+  #sliderInput("bw_adjust", label = "Bandwidth adjustment:",              min = 0.2, max = 2, value = 1, step = 0.2)
+)
+
+```
+
+Column 
+-----------------------------------------------------------------------
+
+### Gráfico 1
+En el siguiente grafico se presenta la distribucion en cada año del tipo de ataques terroristas por tipo de victima
+
+```{r lineatiempopaisaño, echo=FALSE}
+renderPlot({
+terr%>%filter(iyear==input$ANIO,country_txt==input$Country_txt,targtype1_txt%in%input$targt)%>%
+    mutate(fecha = as.yearmon(paste(iyear, imonth, sep = "-")))%>%
+    ggplot(aes(x =imonth , y = attacktype1_txt , fill=attacktype1_txt)) +
+  geom_density_ridges(jittered_points=T,stat="binline", bins=12, alpha=0.7) +
+  theme_ridges() + 
+  theme_bw() +
+  xlab(paste("Months in year", input$ANIO)) +
+  ylab("Attack type")+
+  labs(fill = "Attack Type")
+  
+})
+```
+
+
+### Grafico 2
+
+Luego, podemos ver como se distribuyen las muertes atribuibles a ataques terroristas, dependiendo del objetivo del ataque,  durante la historia de cada pais. El simbolo representa si en el año en cuestion la cabeza de gobierno tenia cargo militar.
+
+```{r, echo=F}
+
+renderPlot({
+  pols%>%mutate(military = as.factor(military))%>%
+  filter(pols$countryname==input$Country_txt,
+         pols$targtype1_txt%in%input$targt)%>%
+  group_by(year, targtype1_txt, military)%>% 
+  summarise(muerte = sum(nkill), numero=n())%>%
+  ggplot(aes(x=year, y=muerte, color=targtype1_txt, shape=military))+
+  xlim(1970,2017)+
+    geom_point()+
+  theme_bw()
+})
+```
+
+### Grafico 3
+
+El grafico anterior muestra la distribucion de muertes por ataques terroristas. Esto no es necesariamente la cantidad real de ataques.
+```{r}
+renderPlot({
+  pols%>%
+filter(pols$countryname=="Chile", pols$targtype1_txt%in%"Military")%>%
+    group_by(year, targtype1_txt)%>%
+    summarise(Ataques = n())%>%
+    ggplot(aes(y=Ataques, x=year))+
+    xlim(1970,2017)+
+    geom_line()+
+    theme_bw()
+})
+
+
+```
+
+
+reportes por region
+======================
+
+Column {.sidebar}
+--------------------------
+
+```{r, echo=F}
+inputPanel(
+  checkboxGroupInput("varb", label = "Variable of Interest",
+              choices = varis, selected = c("Explosives", "Firearms")), 
+  
+  checkboxGroupInput("region", "Region", choices= c(levels(pols$region_txt)),
+selected = c(levels(pols$region_txt))))
+
+#, selected = c("East Asia", "Southeast Asia")
+```
+
+
+
+Column
+---------------------------------
+### Grafico 1
+Un correlograma entre tipos de ataque, considerando ataques con multiples tipos
+```{r, echo=F}
+renderPlot({
+pols%>%subset(select=input$varb)%>%filter(pols$region_txt%in%input$region)%>%cor()%>%heatmap()
+  })
+```
+
+
+
+###Grafico 2
+
+A continuacion los tipos de ataque mas comunes, con barras
+```{r}
+
+renderDataTable(pols%>%filter(region_txt%in%input$region, is.na(attacktype1_txt)==0)%>%group_by(region_txt, attacktype1_txt)%>%summarise(num= n()))
+
+
+renderPlot(({
+
+pols%>%filter(region_txt%in%input$region, is.na(attacktype1_txt)==0)%>%
+    group_by(region_txt, attacktype1_txt)%>%
+    summarise(num= n())%>%
+    ggplot(aes(x=as.character(attacktype1_txt), y=num)) +
+  geom_bar(stat="identity", fill=alpha("blue", 0.3), na.rm = T) +
+  ylim(-100,max(p$num)) +
+  theme_minimal() +
+  theme(
+    plot.margin = unit(rep(-2,4), "cm") ) +
+  coord_polar(start = 0)
+
+}))
+
+
+```
+

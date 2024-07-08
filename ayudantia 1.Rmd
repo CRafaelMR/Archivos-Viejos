@@ -1,0 +1,95 @@
+---
+title: "ayudantia 1"
+output: html_notebook
+---
+Leonardo rojas; gmail Leo.rojas.k@gmail.com
+
+
+repaso de tidyverse, paquete de comandos de uso general que incluye entre otros a ggplot2, readr, purr, dplyr y tidyr
+```{r}
+installed.packages()
+install.packages("tidyverse", "Rtools")
+library(tidyverse)
+
+```
+Sobre los tipos de variables
+```{r}
+x=1 #escalar
+y="una cadena de caracteres" #mientras que esto es un comentario
+una_variable_piola= "t1dyv3rs3" 
+logica = TRUE
+sin.info = NA
+vector = c("a", "b", "c")
+vector
+
+vector_numerico = c(seq(1:55))
+vector_numerico
+vector_con_saltos = c(seq(1, 22, 3))
+vector_con_saltos
+```
+Recordad que puedes usar $help()$ si puedes
+```{r}
+help(seq)
+help(c)
+```
+empezamos a mezclar variables
+```{r}
+comb_string = c(vector, vector_numerico)
+comb_num = c(vector_con_saltos, vector_numerico)
+combinacion_raro <- c(rep(NA, 12), seq(22:27), seq(22, 27), c(T, T, F))
+combinacion_raro                      
+```
+
+```{r}
+ayud_R = c(rep("Nombre", 2), "year_of_birth", rep("day_of_birth", 3), "apellido")
+ayud_R
+```
+
+```{r}
+x <- seq(1:16)
+x <- x^3 #nada te detiene de sosbreescribir una variable sobre si misma
+x
+
+m = matrix(x, ncol = 4 , nrow = 4)
+m
+mt = t(m) #transpuesta
+mt
+```
+Crea una matriz de 3 columnas y 7 filas que contenga una secuencia de datos desde 50 hasta 1000, de 11 en 11. divida por 3
+```{r}
+Respuesta <- matrix(seq(50, 1000, 11)/3, ncol= 3, nrow = 7)
+```
+esto nos tira un error, porque las 87 observaciones del vector no caben en la matriz de 21 observaciones.
+si en vez lo hacemos por partes:
+```{r}
+x=seq(50, 1000, 11)/3
+x 
+respuesta_1 <- matrix(x, ncol= 3, nrow = 7 ) 
+respuesta_1
+```
+En vez, al hacer esto metemos las primeras 21 observaciones del vector en la matriz, ignorando las que sobran.
+```{r}
+rbind(respuesta_1, respuesta_1) #une por fila
+cbind(respuesta_1, respuesta_1) #une por columna
+df <- as.data.frame(t(matrix(seq(22, 95, 3), ncol=5)))
+df
+nombres <- c( "doris", "juan", "andres", "marcela", "felipe")
+colnames(df) <- nombres
+df
+```
+este chunk son comandos mas tecnicos con la base de datos Sii, que tiene valores de impuestos por region del 2018
+```{r}
+getwd()
+setwd()#poner espacio de trabajo
+library(readr)
+sii <- read_delim("PUB_Region_2018.txt",
+                    "\t", escape_double = F, locale = locale(Encoding()))
+help("read.delim")
+ncol(sii)
+nrow(sii)
+unique(sii$agno_comercial)
+table(sii$region)
+summary(sii)
+str(sii)
+
+```

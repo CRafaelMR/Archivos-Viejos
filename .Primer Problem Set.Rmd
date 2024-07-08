@@ -1,0 +1,174 @@
+---
+title: 'Problem Set 1: Manejo de Bases de datos '
+output:
+  html_document:
+    df_print: paged
+---
+#### Instrucciones de Entrega
+Este Problem Set es de caracter individual y debe ser entregado el 4 de Octubre con dos archivos adjuntos: . Rmd y Html. En caso que alguno de los documentos se encuentre corrupto o por cualquier otro motivo no se pueda abrir, será evaluado con nota 1. 
+
+
+#### Pregunta 1:  Estudio de personas de tercera Edad en Chile. (10 Puntos)
+
+Importe la casen del 2017, la cual puede bajar desde el siguiente [link](http://observatorio.ministeriodesarrollosocial.gob.cl/casen-multidimensional/casen/basedatos.php). Con los datos expresados en esa base de datos, realice lo siguiente: 
+```{r}
+library(dplyr)
+library(ggplot2)
+library(haven)
+Data <- read_dta("Casen 2017.dta")
+
+```
+a.  Describir la dimensión de la base de datos. Además, describir la cantidad de variables que posee.
+```{r}
+nrow(Data)
+ncol(Data)
+str(Data)
+table(Data, col_names = Data$edad)
+str(Data$edad)
+```
+La base tiene `{r} ncol(Data)` observaciones con `{r} nrow(Data)` variables cada una.
+
+b. Revisar de la naturaleza de la base de datos, asegurando que se encuentre técnicamente correcta.
+```{r}
+head(Data)
+
+```
+c. Realizar estadística descriptiva de la base de datos.
+```{r}
+summary(Data)
+```
+d. Realizar un ranking de las variables de acuerdo a la cantidad de missings que poseen.
+```{r}
+```
+e. Revisar la cantidad de outliers por variable. ¿Qué variable posee más outliers? ¿Qué método justificaría para imputarlos? ¿Por qué?
+```{r}
+```
+
+#### Pregunta 2:  Estudio de personas de tercera Edad en Chile. Análsis explorativo de los datos (20 Puntos)
+
+El objetivo de esta pregunta es simular las estadísticas descriptivas que se encuentran publicadas en la CASEN 2017 sobre adulto mayor [(Link)](http://observatorio.ministeriodesarrollosocial.gob.cl/casen-multidimensional/casen/docs/Resultados_Adulto_Mayores_casen_2017.pdf). Para esto, con la información disponible en la Casen, debe realizar las siguientes tablas:  
+
+a. Calcular el número y el porcentaje del total de personas que se encuentren en los siguientes grupos etarios: 0-14, 15-29, 30-44, 45-59, 60+.  (2 puntos) 
+```{r}
+Data <- Data %>% mutate(grupo_etario = 
+  ifelse( edad<15, 1,
+    ifelse(edad<30, 2, 
+         ifelse(edad<45, 3, 
+                ifelse(edad < 60, 4, 
+                       5)))))
+class(Data$grupo_etario)<- "format"
+class(Data$grupo_etario)
+popl <- Data %>% summarise(N = n())
+class(popl) <- "integer"
+
+resumen<- Data %>% group_by(grupo_etario)%>% summarise(Numero = n(), Proporcion = n()) %>% mutate( Proporcion = Proporcion/popl)
+  resumen#216439
+```
+b. Calcular la distribución (Total y porcentaje) por sexo de las personas mayores a los 60 años.  (2 puntos)
+```{r}
+
+```
+c. Calcular la distribución (Total y porcentaje) por sexo y región de las personas mayores a los 60 años.(2 puntos)
+```{r}
+
+```
+d. Calcular la distribución  (Total y porcentaje) de las personas de 60 años y más por estado civil y sexo. (2 puntos)
+```{r}
+```
+e. Calcular el Porcentaje de hogares con presencia de personas de 60 años y más. (2 puntos)
+```{r}
+```
+f. Calcular el Porcentaje de hogares con jefe/a adulto/a mayor según sexo del jefe de hogar por zona. (2 puntos)
+```{r}
+```
+g. Calcular la Tasa de analfabetismo de personas de 60 años y más por zona. (2 puntos)
+```{r}
+```
+h. Calcular la Tasa de participación laboral de personas de 60 años y más por tramo de edad y sexo. (2 puntos)
+```{r}
+```
+i. Calcular la Tasa de participación laboral de personas de 60 años por sexo. (2 puntos)
+```{r}
+```
+j. Sobre la información recolectada ¿Qué tesis podría elaborar sobre la situación de los adultos mayores en Chile?. (2 puntos)
+```{r}
+```
+
+#### Pregunta 3: Imputación de datos faltantes (15 Puntos)
+
+Genere una base de datos que contenga las siguientes caracteristicas:
+
++ $X_1$ sea una variable sea una variable uniforme que tome valores entre 2 y -2.
+
++ $X_2$ sea una variable categórica que tome valor entre 1 al 4.
+
++ $X_3$ sea una variable con una distribucion normal estándar. 
+
++ u  sea un error de media cero y desviación estandar 3.
+
++ $β_0$ es igual a 100.
+
++ $β_1$ es igual a 4.
+
++ $β_2$  es igual a 34.
+
++  $β_3$  es igual a 7.
+
++ $Y=β_0 + β_1 X_1 + β_2 X_2 + β_3X_3 + u$
+
+1.  Realice una estadistica descriptiva básica de la base de datos (2 puntos)
+2. Elimine de manera aletaroria un 15% de la base y vuelva a hacer la estadistica descriptiva. ¿Cómo cambian sus resultados? (3 puntos)
+3. Elimine un 22% de las observaciones de la variable $X_2$  e impute los datos. Justifique su elección de la imputación. (5 puntos)
+4. Elimine todas aquellas observaciones donde $X_1$=1 y $X_2$= 3 e impútelos.   Explique cuáles son los problemas que producen una imputaccion incorrecta de datos. (5 puntos)
+```{r}
+set.seed(1)
+x_1 <- runif(1000, -2, 2)
+x_2 <- sample(1:4, 1000, replace = T)
+x_3 <- rnorm(1000)
+u <- rnorm(1000, 0, 3)
+
+base <- data.frame(x_1, x_2, x_3, u)
+base<- base%>% mutate(Y = 100+ 4*x_1 + 34*x_2 +7*x_3 + u)
+summarise(base,  promedio = mean(), media = median(), desviacion = sd())
+```
+#### Pregunta 4 : Creación de funciones (15 puntos)
+
+Cree una función que reciba un vector de valores y le ayude a calcular estadística descriptiva.
+
+1. Si el valor es numérico o entero, imprima en consola "La variable es numérica", entregue la cuenta de valores NA, luego calcule mínimo, máximo, rango, cuartiles, varianza y desviación estandar, sin incluir los valores NA .(5 puntos)
+```{r}
+est.des.num <- function(X){
+  a <- "La variable es numérica"
+  print(a)
+  X<-as.numeric(X)
+  sum(is.na(X))
+  #type.of
+  #calculamos NA
+  #calculamos est des
+  summarise(X, "mínimo" = min(na.rn=T), "máximo" = max(na.rn=T), "rango" = range(na.rn=T), "cuartiles" = quantile(na.rn=T), "varianza" = var(na.rn=T), "desviacion estandar" = sd(na.rn=T))
+  
+}
+```
+
+2. Si el valor es lógico o factor, imprima en consola "La variable es categórica", y entregue la frecuencia de cada valor, incluyendo los valores NA. (5 puntos)
+```{r}
+est.des.log <- function(X){
+  b<- "La variable es categórica"
+  print(b, quote = F)
+  
+  
+  
+}
+```
+3. Si el valor es de otro tipo, imprima en consola "No puedo calcular estadística descriptiva de Tipo_de_dato_entregado". (5 puntos)
+```{r}
+descriptiva <- function(X){
+  clase <- class(X)
+  ERROR <- "No puedo calcular estadística descriptiva de datos del tipo"
+ 
+   ifelse(clase == "numeric"| clase =="integer", est.des.num(X), ifelse(clase == "logicaL"| clase =="factor", est.des.log(X), print(paste(ERROR,clase), quote = F)))
+}
+descriptiva(Data)
+descriptiva(Data$edad)
+```
+Hint: investigue las funciones paste(), class()
